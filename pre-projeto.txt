@@ -1,0 +1,17 @@
+CONSISTENTE - Finanças Pessoais
+
+Sistema multiplataforma para controle de recursos financeiros.
+Opções: disponível para uso off line e online.
+
+Frameworks
+Tkinter e web (Flask ou Django)
+Se modelo comercial for aberto para público externo, será necessário comprar mais recursos.
+
+
+Projeto
+- Construir modelagem de dados usando SQLAlchemy para melhor integração entre ambientes.
+- Buscar orientação à objetos plena.
+- Definir método de integração entre banco local e banco nuvem.
+
+Tkinter
+- Criar padrão para construtor de janelas e layouts. (CRC está sendo a base mais atual.)

@@ -1,0 +1,5 @@
+#BGCOLOR = 'DarkSeaGreen1'
+BGCOLOR = 'LightSkyBlue3'
+BGFORM = 'SlateGray1'
+SQLITE_DB = 'consistente.db'
+FONT = 'Arial'
