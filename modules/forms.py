@@ -2482,9 +2482,9 @@ class CashflowForm:
         pre = 'WHERE'
         bank = None
         if self.banco.get() and self.banco.get() != 'Todos os bancos':
-            filter1 += ' %s nomebanco LIKE "%s%s%s"' % (pre, "%", self.banco.get(), "%")
-            filter2 += ' %s nomebanco LIKE "%s%s%s"' % (pre, "%", self.banco.get(), "%")
-            bank = ' %s nomebanco LIKE "%s%s%s"' % (' AND ', "%", self.banco.get(), "%")
+            filter1 += ' %s nomebanco = "%s"' % (pre, self.banco.get())
+            filter2 += ' %s nomebanco = "%s"' % (pre, self.banco.get())
+            bank = ' %s nomebanco = "%s"' % (' AND ', self.banco.get())
             pre = 'AND'
         elif self.banco.get() and self.banco.get() == 'Todos os bancos':
             filter1 += ' %s bancos.tipomov IN (0, 1)' % (pre)
