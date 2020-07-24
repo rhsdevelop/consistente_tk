@@ -2,7 +2,7 @@ import csv
 import datetime
 import os
 from tkinter import (Button, Checkbutton, Entry, Frame, Image, IntVar, Label,
-                     Listbox, Text, messagebox)
+                     Listbox, Text, messagebox, Toplevel)
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Combobox, Scrollbar, Treeview
 
@@ -2508,7 +2508,53 @@ class CashflowForm:
         self.data(filter1=filter1, filter2=filter2, initial_date=initial_date, bank=bank)
         
     def cmd_pagar(self):
-        messagebox.showwarning(title='Informação', message='Ainda não está disponível.')
+        resp = messagebox.askyesno('Aviso', 'Tem certeza que deseja realizar a baixa dos documentos selecionados?')
+        if resp:
+            c = self.conn.cursor()
+            saved = {}
+            if self.banco.get():
+                saved['banco'] = self.banco.get()
+            if self.vencini.get():
+                saved['vencini'] = self.vencini.get()
+            if self.vencfin.get():
+                saved['vencfin'] = self.vencfin.get()
+            try:
+                region = self.table1.identify("region", event.x, event.y)
+            except:
+                region = 'cell'
+            #column = form.fields['table'].identify("column", event.x, event.y)
+            #cell = form.fields['table'].identify("row", event.x, event.y)
+            _id = None
+            if region == "cell":
+                if self.table1.selection():
+                    for i in self.table1.selection():
+                        _id = str(self.table1.item(i, 'text'))
+                        command = 'SELECT datapago, tipomov, descricao FROM diario WHERE id = %s' % (_id)
+                        c.execute(command)
+                        resp = c.fetchone()
+                        if resp[2] == '<CRED.CARD>':
+                            messagebox.showwarning('Aviso', 'Foi selecionada fatura de cartão de crédito entre os documnentos. Realize o pagamento na seção de Cartões de Crédito.')
+                            continue
+                        actual_date = str(d.datetime.now().date())
+                        if not resp[0]:
+                            if resp[1] == 3:
+                                command = 'UPDATE diario SET datapago = "%s" WHERE id = %s AND datapago = ""' % (actual_date, _id)
+                                c.execute(command)
+                                command = 'UPDATE diario SET datapago = "%s" WHERE id = %s AND datapago = ""' % (actual_date, int(_id) - 1)
+                                c.execute(command)
+                            elif resp[1] == 4:
+                                command = 'UPDATE diario SET datapago = "%s" WHERE id = %s AND datapago = ""' % (actual_date, _id)
+                                c.execute(command)
+                                command = 'UPDATE diario SET datapago = "%s" WHERE id = %s AND datapago = ""' % (actual_date, int(_id) + 1)
+                                c.execute(command)
+                            else:
+                                command = 'UPDATE diario SET datapago = "%s" WHERE id = %s AND datapago = ""' % (actual_date, _id)
+                                c.execute(command)
+                    self.conn.commit()
+                    self.cmd_seek()
+                    messagebox.showinfo(title='Baixas realizadas', message='Documentos selecionados foram baixados com data de hoje.')
+                else:
+                    messagebox.showerror(title='Atenção', message='Selecione um registro para a baixa.')
 
     def cmd_quit(self):
         self.instance.clear_mainframe()
@@ -2598,7 +2644,7 @@ class ReportForm:
         Label(self.frame, text='', bg=BGFORM, width=5).grid(row=5, column=1)
         Label(self.frame, text='', bg=BGFORM, width=5).grid(row=5, column=3)
 
-    def data(self, filter='', categ='', order=''):
+    def data(self, filter='', categ='', order='datadoc'):
         c = self.conn.cursor()
         acum = 0.0
         categs = {
@@ -2620,7 +2666,7 @@ class ReportForm:
         cmd += 'JOIN bancos on bancos.id = diario.banco '
         cmd += 'JOIN categorias on categorias.id = diario.categoriamov '
         if filter: cmd += filter
-        cmd += ' GROUP BY datadoc ORDER BY datadoc'
+        cmd += ' GROUP BY datadoc ORDER BY %s' % order
         c.execute(cmd)
         dados = c.fetchall()
         _dados = []
@@ -2665,7 +2711,7 @@ class ReportForm:
         if acum < 0.0:
             self.saldo['fg'] = 'red'
 
-    def cmd_seek(self, event=None):
+    def cmd_seek(self, event=None, order_by='datadoc, datavenc'):
         cmd(self.banco)
         cmd(self.categoriamov)
         cmd(self.parceiro)
@@ -2728,6 +2774,9 @@ class FechamentoForm:
         self.sb_y = Scrollbar(self.fr1_place, orient="vertical", command=self.table1.yview)
         self.sb_x = Scrollbar(self.fr1_place, orient="horizontal", command=self.table1.xview)
         self.table1.configure(yscroll=self.sb_y.set, xscroll=self.sb_x.set)
+        self.table1.bind("<Button-1>", self.cmd_table)
+        self.table1.bind("<Double-1>", self.cmd_table)
+        self.asc = True # Ordem ascendente ou descendente
         self.buttons = Frame(self.frame, bg=BGFORM, width=30)
         self.gerar = Button(self.buttons, text='Gerar resumo em CSV', width=30, command=self.cmd_gerar)
         self.quit = Button(self.buttons, text='Sair', width=10, command=self.cmd_quit)
@@ -2791,9 +2840,30 @@ class FechamentoForm:
         dados = c.fetchall()
         for i in dados:
             categs[i[0]][i[1]] = round(i[2], 2)
+        categs_list = list(categs.keys())
+        if order:
+            order = order.split(' ')
+            if order[0] == 'Categoria':
+                reverse = False
+                if order[1] == 'DESC': reverse = True
+                categs_list.sort(reverse=reverse)
+            else:
+                if order[0] in months:
+                    sorter = []
+                    for i in categs:
+                        if categs[i][order[0]] < 0:
+                            signal = '-'
+                        sorter.append('%s %s' % (str(round(abs(categs[i][order[0]] * 100))).zfill(10), i))
+                        # Presume-se que aqui só entra números negativos. Se houver positivos, é necessário mudar a regra
+                reverse = False
+                if order[1] == 'DESC': reverse = True
+                sorter.sort(reverse=reverse)
+                categs_list = []
+                for i in sorter:
+                    categs_list.append(i[11:])
         _dados = []
         count = 1
-        for i in categs:
+        for i in categs_list:
             new_line = [str(count), i]
             for m in months:
                 new_line.append(Numbers(-float(categs[i][m])).get_str())
@@ -2821,17 +2891,17 @@ class FechamentoForm:
                 text=row, 
                 anchor='center' 
             )
-            if row in ['Valor dia', 'Valor acumulado', 'Disponível']:
-                anchor = 'e'
-            else:
+            if row in ['Categoria']:
                 anchor = 'w'
+            else:
+                anchor = 'e'
             self.table1.column(row, anchor=anchor, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
             index += 1
 
-    def cmd_seek(self, event=None):
+    def cmd_seek(self, event=None, order=''):
         #cmd(self.banco)
         #cmd(self.categoriamov)
         filter = ''
@@ -2846,8 +2916,26 @@ class FechamentoForm:
             _date = str(lastdaymonth(self.mesfin.get() + '01'))
             filter += ' %s datadoc <= "%s"' % (pre, _date)
             pre = 'AND'
-        self.data(filter=filter)
-        
+        self.data(filter=filter, order=order)
+
+    def cmd_table(self, event=None):
+        try:
+            region = self.table1.identify("region", event.x, event.y)
+        except:
+            region = 'cell'
+        #cell = form.fields['table'].identify("row", event.x, event.y)
+        if region == 'heading':
+            column = self.table1.identify("column", event.x, event.y)
+            try:
+                if self.asc:
+                    self.cmd_seek(order=self.table1.column(int(column[1:])-1)['id'] + ' ASC')
+                    self.asc = False
+                else:
+                    self.cmd_seek(order=self.table1.column(int(column[1:])-1)['id'] + ' DESC')
+                    self.asc = True
+            except:
+                pass
+
     def cmd_gerar(self):
         messagebox.showwarning(title='Informação', message='Ainda não está disponível.')
 
