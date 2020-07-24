@@ -2775,7 +2775,7 @@ class FechamentoForm:
         self.sb_x = Scrollbar(self.fr1_place, orient="horizontal", command=self.table1.xview)
         self.table1.configure(yscroll=self.sb_y.set, xscroll=self.sb_x.set)
         self.table1.bind("<Button-1>", self.cmd_table)
-        self.table1.bind("<Double-1>", self.cmd_table)
+        self.table1.bind("<Double-1>", self.cmd_detail)
         self.asc = True # Ordem ascendente ou descendente
         self.buttons = Frame(self.frame, bg=BGFORM, width=30)
         self.gerar = Button(self.buttons, text='Gerar resumo em CSV', width=30, command=self.cmd_gerar)
@@ -2935,6 +2935,29 @@ class FechamentoForm:
                     self.asc = True
             except:
                 pass
+
+    def cmd_detail(self, event=None):
+        try:
+            region = self.table1.identify("region", event.x, event.y)
+        except:
+            region = 'cell'
+        #cell = form.fields['table'].identify("row", event.x, event.y)
+        if region == 'cell':
+            if self.table1.selection():
+                for i in self.table1.selection():
+                    _values = self.table1.item(i, 'values')
+                dataini = date_out(self.mesini.get() + '-01')
+                datafin = date_out(str(lastdaymonth(self.mesfin.get() + '-01')))
+                self.instance.clear_mainframe()
+                main = MovimentosForm(self.instance, self.conn, tipo_form='pag')
+                main.categoriamov.delete(0, 'end') 
+                main.categoriamov.insert(0, _values[0]) 
+                main.dataini.delete(0, 'end') 
+                main.dataini.insert(0, dataini) 
+                main.datafin.delete(0, 'end') 
+                main.datafin.insert(0, datafin) 
+                main.grid()
+                main.cmd_seek()
 
     def cmd_gerar(self):
         messagebox.showwarning(title='Informação', message='Ainda não está disponível.')
