@@ -1,5 +1,7 @@
 import csv
 import datetime
+import platform
+import subprocess
 import os
 from tkinter import (Button, Checkbutton, Entry, Frame, Image, IntVar, Label,
                      Listbox, Text, messagebox, Toplevel)
@@ -64,7 +66,7 @@ class MainPanel:
         Label(self.frame, text='', width=10, bg=self.bg).grid(row=row + 3, column=0)
 
     def teste(self, event=None):
-        print('Renan')
+        messagebox.showwarning('Aviso', 'Módulo ainda não está implementado.')
 
     def cmd_bank(self, event=None):
         self.instance.clear_mainframe()
@@ -139,7 +141,8 @@ class SobreForm:
         self.mainframe = instance.mainframe
         self.frame = Frame(self.mainframe, bd=1, relief='sunken', bg=BGFORM)
         self.labels = Frame(self.frame, bd=1, bg=BGFORM)
-        self.image1 = Widgets(self.labels).image('', 0,'static/images/finance.png', 1, 1, bg=BGFORM, rowspan=5, imagewidth=(64, 64))
+        self.image1 = Widgets(self.labels).image('', 0,'static/images/finance.png', 1, 1, bg=BGFORM, rowspan=1, imagewidth=(64, 64))
+        self.image2 = Widgets(self.labels).image('', 0,'static/images/logo_rhs_peq.png', 2, 1, bg=BGFORM, rowspan=4, imagewidth=(64, 64))
         text1 = 'Consistente - Gerenciamento Financeiro'
         text2 = 'Cuidando bem de seus recursos!'
         text3 = 'Versão 1.0'
@@ -1206,45 +1209,69 @@ class ParceirosForm:
         self.instance = instance
         self.mainframe = instance.mainframe
         self.frame = Frame(self.mainframe, bd=1, bg=BGFORM, relief='sunken')
-        self.filter1_l = Label(self.frame, anchor='e', text='Filtro ', bg=BGFORM, width=10)
-        self.filter1 = Entry(self.frame, width=20)
-        self.filter1.bind("<FocusOut>", self.cmd_seek)
+        self.filter_frame = Frame(self.frame, bg=BGFORM, width=30)
+        self.nome_l = Label(self.filter_frame, anchor='e', text='Nome ', bg=BGFORM, width=23)
+        self.nome = Entry(self.filter_frame, width=20)
+        self.nome.bind("<FocusOut>", self.cmd_seek)
+        self.nomecompleto_l = Label(self.filter_frame, anchor='e', text='Nome Completo ', bg=BGFORM, width=23)
+        self.nomecompleto = Entry(self.filter_frame, width=20)
+        self.nomecompleto.bind("<FocusOut>", self.cmd_seek)
+        self.doc_l = Label(self.filter_frame, anchor='e', text='CPF/CNPJ ', bg=BGFORM, width=15)
+        self.doc = Entry(self.filter_frame, width=20)
+        self.doc.bind("<FocusOut>", self.cmd_seek)
+        self.endereco_l = Label(self.filter_frame, anchor='e', text='Endereço ', bg=BGFORM, width=15)
+        self.endereco = Entry(self.filter_frame, width=20)
+        self.endereco.bind("<FocusOut>", self.cmd_seek)
         self.fr1 = Frame(self.frame, bd=1, bg=BGFORM, relief='sunken')
-        self.fr1.configure(height=400, width=800)
+        self.height = int(instance.root.winfo_height() - 260)
+        self.fr1.configure(height=self.height, width=800)
         self.fr1.grid_propagate(0)
         self.fr1_place = Frame(self.fr1)
         self.table1 = Treeview(self.fr1_place, height=20)
         self.sb_y = Scrollbar(self.fr1_place, orient="vertical", command=self.table1.yview)
         self.sb_x = Scrollbar(self.fr1_place, orient="horizontal", command=self.table1.xview)
         self.table1.configure(yscroll=self.sb_y.set, xscroll=self.sb_x.set)
+        self.table1.bind("<Button-1>", self.cmd_table)
+        self.asc = True # Ordem ascendente ou descendente
         self.buttons = Frame(self.frame, bg=BGFORM, width=30)
         self.new = Button(self.buttons, text='Novo', width=10, command=self.cmd_new)
         self.edit = Button(self.buttons, text='Editar', width=12, command=self.cmd_edit)
         self.quit = Button(self.buttons, text='Sair', width=10, command=self.cmd_quit)
-        if 'filter1' in saved and saved['filter1']: self.filter1.insert('end', saved['filter1'])
-        self.filter1.focus()
+        if 'nome' in saved and saved['nome']: self.nome.insert('end', saved['nome'])
+        if 'nomecompleto' in saved and saved['nomecompleto']: self.nomecompleto.insert('end', saved['nomecompleto'])
+        if 'doc' in saved and saved['doc']: self.doc.insert('end', saved['doc'])
+        if 'endereco' in saved and saved['endereco']: self.endereco.insert('end', saved['endereco'])
+        self.nome.focus()
 
     def grid(self):
         #Label(self.mainframe, text='', width=10, bg=BGCOLOR).grid(row=0, column=0)
         Label(self.mainframe, text='CADASTRO DE PARCEIROS', width=60, bg=BGCOLOR, font=('Arial Bold', 16)).grid(row=1, column=0)
         self.frame.grid(row=2, column=0)
-        Label(self.frame, text='\n', width=5, height=10, bg=BGFORM).grid(row=0, column=0, rowspan=5) # remover espaço para Enter.
+        self.filter_frame.grid(row=1, column=1, columnspan=2, stick='w')
+        Label(self.frame, text='\n', width=5, height=3, bg=BGFORM).grid(row=0, column=0, rowspan=3) # remover espaço para Enter.
         Label(self.frame, text='', bg=BGFORM, width=10).grid(row=0, column=1)
-        self.filter1_l.grid(row=1, column=1)
-        self.filter1.grid(row=1, column=2)
-        Label(self.frame, text='', bg=BGFORM, width=5).grid(row=2, column=1)
-        self.fr1.grid(row=3, column=1, columnspan=2, stick='w')
-        self.fr1_place.place(bordermode='outside', height=400, width=800)
+        Label(self.filter_frame, text='\n', width=1, height=4, bg=BGFORM).grid(row=0, column=0, rowspan=3) # remover espaço para Enter.
+        self.nome_l.grid(row=0, column=1)
+        self.nome.grid(row=0, column=2)
+        self.nomecompleto_l.grid(row=1, column=1)
+        self.nomecompleto.grid(row=1, column=2)
+        self.doc_l.grid(row=0, column=3)
+        self.doc.grid(row=0, column=4)
+        self.endereco_l.grid(row=1, column=3)
+        self.endereco.grid(row=1, column=4)
+        Label(self.frame, text='', bg=BGFORM, width=5).grid(row=3, column=1)
+        self.fr1.grid(row=4, column=1, columnspan=2, stick='w')
+        self.fr1_place.place(bordermode='outside', height=self.height, width=800)
         self.sb_y.pack(side="right", fill='y')
         self.sb_x.pack(side="bottom", fill='x')
         self.table1.pack(expand=1)
-        self.buttons.grid(row=4, column=1, columnspan=2)
+        self.buttons.grid(row=5, column=1, columnspan=2)
         Label(self.buttons, text='', bg=BGFORM, width=50).grid(row=0, column=1, columnspan=3)
         self.new.grid(row=1, column=1)
         self.edit.grid(row=1, column=2)
         self.quit.grid(row=1, column=3)
-        Label(self.frame, text='', bg=BGFORM, width=5).grid(row=5, column=1)
-        Label(self.frame, text='', bg=BGFORM, width=5).grid(row=5, column=3)
+        Label(self.frame, text='', bg=BGFORM, width=5).grid(row=6, column=1)
+        Label(self.frame, text='', bg=BGFORM, width=5).grid(row=6, column=3)
 
     def data(self, filter='', order='nome'):
         c = self.conn.cursor()
@@ -1260,15 +1287,15 @@ class ParceirosForm:
             _dados.append([i[0], i[1], i[2], TIPOS_DOC[i[3]], i[4], i[5], i[6], i[7], TIPOS_RELAC[i[8]], i[9]])
         dados = _dados
         # Preenche a tabela
-        self.table1['columns'] = ['Nome', 'Nome Completo', 'tipo', 'doc', 'endereco', 'telefone', 'observacao', 'modo', 'Incluído em']
+        self.table1['columns'] = ['Nome', 'Nome Completo', 'Tipo', 'CNPJ', 'endereco', 'telefone', 'observacao', 'modo', 'Incluído em']
         self.table1.heading('#0', text='Id', anchor='center')
         self.table1.column('#0', anchor='w', width=60)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         columns = {
-            'id': 60, 'Nome': 120, 'Nome Completo': 250, 'tipo': 120, 'doc': 140, 'endereco': 250, 'telefone': 120, 'observacao': 180, 'modo': 120, 'Incluído em': 120
+            'id': 60, 'Nome': 120, 'Nome Completo': 250, 'Tipo': 120, 'CNPJ': 140, 'endereco': 250, 'telefone': 120, 'observacao': 180, 'modo': 120, 'Incluído em': 120
         }
-        for row in ['Nome', 'Nome Completo', 'tipo', 'doc', 'endereco', 'telefone', 'observacao', 'modo', 'Incluído em']:
+        for row in ['Nome', 'Nome Completo', 'Tipo', 'CNPJ', 'endereco', 'telefone', 'observacao', 'modo', 'Incluído em']:
             self.table1.heading(
                 row, 
                 text=row, 
@@ -1281,33 +1308,67 @@ class ParceirosForm:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
             index += 1
 
-    def cmd_seek(self, event=None):
+    def cmd_seek(self, event=None, order='nome'):
+        print(order)
         # Esse código precisa ser ajustado de acordo com os fields do filtro.
         filt = ''
         pre = 'WHERE'
-        if self.filter1.get():
-            filt += ' %s filter1 LIKE "%s%s%s"' % (pre, "%", self.filter1.get(), "%")
+        if self.nome.get():
+            filt += ' %s nome LIKE "%s%s%s"' % (pre, "%", self.nome.get(), "%")
+            pre = 'AND'
+        if self.nomecompleto.get():
+            filt += ' %s nomecompleto LIKE "%s%s%s"' % (pre, "%", self.nomecompleto.get(), "%")
+            pre = 'AND'
+        if self.doc.get():
+            filt += ' %s doc LIKE "%s%s%s"' % (pre, "%", self.doc.get(), "%")
+            pre = 'AND'
+        if self.endereco.get():
+            filt += ' %s endereco LIKE "%s%s%s"' % (pre, "%", self.endereco.get(), "%")
             pre = 'AND'
         #if self.filter2.get():
         #    filt += ' %s filter2 = %s' % (pre, self.filter2.get())
-        self.data(filter=filt)
+        self.data(filter=filt, order=order)
         
+    def cmd_table(self, event=None):
+        try:
+            region = self.table1.identify("region", event.x, event.y)
+        except:
+            region = 'cell'
+        #cell = form.fields['table'].identify("row", event.x, event.y)
+        columns = 'nome', 'nomecompleto', 'tipo', 'doc', 'endereco', 'telefone', 'observacao', 'modo', 'datacadastro'
+        if region == 'heading':
+            column = self.table1.identify("column", event.x, event.y)
+            if self.asc:
+                self.cmd_seek(order=columns[int(column[1:]) - 1])
+                self.asc = False
+            else:
+                self.cmd_seek(order=columns[int(column[1:]) - 1] + ' DESC')
+                self.asc = True
+
     def cmd_new(self):
         saved = {}
-        if self.filter1.get():
-            saved['filter1'] = self.filter1.get()
-        #if self.filter2.get():
-        #    saved['filter2'] = self.filter2.get()
+        if self.nome.get():
+            saved['nome'] = self.nome.get()
+        if self.nomecompleto.get():
+            saved['nomecompleto'] = self.nomecompleto.get()
+        if self.doc.get():
+            saved['doc'] = self.doc.get()
+        if self.endereco.get():
+            saved['endereco'] = self.endereco.get()
         self.instance.clear_mainframe()
         main = ParceirosEditForm(self.instance, self.conn, saved=saved)
         main.grid()
 
     def cmd_edit(self, event=None):
         saved = {}
-        if self.filter1.get():
-            saved['filter1'] = self.filter1.get()
-        #if self.filter2.get():
-        #    saved['filter2'] = self.filter2.get()
+        if self.nome.get():
+            saved['nome'] = self.nome.get()
+        if self.nomecompleto.get():
+            saved['nomecompleto'] = self.nomecompleto.get()
+        if self.doc.get():
+            saved['doc'] = self.doc.get()
+        if self.endereco.get():
+            saved['endereco'] = self.endereco.get()
         try:
             region = self.table1.identify("region", event.x, event.y)
         except:
@@ -2960,7 +3021,25 @@ class FechamentoForm:
                 main.cmd_seek()
 
     def cmd_gerar(self):
-        messagebox.showwarning(title='Informação', message='Ainda não está disponível.')
+        namefile = 'home/despesas.csv'
+        count = 1
+        while os.path.exists(namefile):
+            namefile = 'home/despesas_%s.csv' % str(count).zfill(2)
+            count += 1
+        f = open(namefile, 'w', newline='')
+        data = csv.writer(f, delimiter='\t')
+        data.writerow(self.table1['columns'])
+        for i in self.table1.get_children():
+            data.writerow(self.table1.item(i, 'values'))
+        f.close()
+        resp = messagebox.askokcancel(title='Abrir arquivo', message='Arquivo gerado com sucesso! Deseja abrir agora?')
+        if resp:
+            if platform.system() == 'Darwin':       # macOS
+                subprocess.call(('open', namefile))
+            elif platform.system() == 'Windows':    # Windows
+                os.startfile(os.path.abspath(namefile))
+            else:                                   # linux variants
+                subprocess.call(('xdg-open', namefile))
 
     def cmd_quit(self):
         self.instance.clear_mainframe()

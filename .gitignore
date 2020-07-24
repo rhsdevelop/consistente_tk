@@ -133,3 +133,6 @@ dmypy.json
 
 # Google Drive Integration
 googledrive/*
+
+# Documentos
+home/*
