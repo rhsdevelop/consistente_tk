@@ -41,7 +41,7 @@ class MainPanel:
             '6': ['Movimento Diário', 'static/images/calendar.png', self.cmd_report],
             '7': ['Fluxo de Caixa', 'static/images/cashmachine.png', self.cmd_cashflow],
             '8': ['Despesas Categoria', 'static/images/pag-categorias.png', self.cmd_fechamento],
-            '9': ['Despesas Parceiro', 'static/images/compras.png', self.teste],
+            '9': ['Despesas Parceiro', 'static/images/compras.png', self.cmd_fechamento_parceiro],
         }
 
     def grid(self):
@@ -119,6 +119,12 @@ class MainPanel:
     def cmd_fechamento(self, event=None):
         self.instance.clear_mainframe()
         main = FechamentoForm(self.instance, self.conn)
+        main.grid()
+        main.cmd_seek()
+
+    def cmd_fechamento_parceiro(self, event=None):
+        self.instance.clear_mainframe()
+        main = FechamentoForm(self.instance, self.conn, mode='FORNECEDOR')
         main.grid()
         main.cmd_seek()
 
@@ -1309,7 +1315,6 @@ class ParceirosForm:
             index += 1
 
     def cmd_seek(self, event=None, order='nome'):
-        print(order)
         # Esse código precisa ser ajustado de acordo com os fields do filtro.
         filt = ''
         pre = 'WHERE'
@@ -1542,12 +1547,14 @@ class ParceirosEditForm:
 
 class MovimentosForm:
     # Objetivo: 
-    def __init__(self, instance, conn, saved={}, tipo_form='rec'):
+    def __init__(self, instance, conn, saved={}, tipo_form='rec', return_to={}):
+        # Se necessário retorno, return_to{'app': App, 'saved': {}}
         self.conn = conn
         self.instance = instance
         self.mainframe = instance.mainframe
         self.bg = BGFORM
         self.font = FONT
+        self.return_to = return_to
         if 'tipo_form' in saved:
             self.tipo_form = saved['tipo_form']
         else:
@@ -1948,7 +1955,15 @@ class MovimentosForm:
 
     def cmd_quit(self):
         self.instance.clear_mainframe()
-        MainPanel(self.instance, self.conn).grid()
+        if self.return_to:
+            if 'saved' in self.return_to:
+                main = self.return_to['app'](self.instance, self.conn, saved=self.return_to['saved'])
+            else:
+                main = self.return_to['app'](self.instance, self.conn)
+            main.grid()
+            main.cmd_seek()
+        else:
+            MainPanel(self.instance, self.conn).grid()
 
         
 class MovimentosEditForm:
@@ -2333,7 +2348,6 @@ class MovimentosEditForm:
                         query_id(self.conn, 'bancos', ['nomebanco'], [True], self.bancorec.get()),
                         fatura
                     )
-                    print(cmd)
                     c.execute(cmd)
                 self.conn.commit()
                 messagebox.showinfo('Informação', 'Dados atualizados com sucesso!')
@@ -2811,9 +2825,11 @@ class ReportForm:
 
 class FechamentoForm:
     # Objetivo: 
-    def __init__(self, instance, conn, saved={}):
+    def __init__(self, instance, conn, saved={}, mode='CATEGORIA'):
+        # mode CATEGORIA ou FORNECEDOR
         self.conn = conn
         self.instance = instance
+        self.mode = mode
         self.bg = BGFORM
         self.mainframe = instance.mainframe
         self.frame = Frame(self.mainframe, bd=1, bg=BGFORM, relief='sunken')
@@ -2841,13 +2857,16 @@ class FechamentoForm:
         self.buttons = Frame(self.frame, bg=BGFORM, width=30)
         self.gerar = Button(self.buttons, text='Gerar resumo em CSV', width=30, command=self.cmd_gerar)
         self.quit = Button(self.buttons, text='Sair', width=10, command=self.cmd_quit)
+        if 'mode' in saved and saved['mode']: self.mode = saved['mode']
+        if 'mesini' in saved and saved['mesini']: self.mesini.insert('end', saved['mesini'])
+        if 'mesfin' in saved and saved['mesfin']: self.mesfin.insert('end', saved['mesfin'])
         if not self.mesini.get() and not saved: self.mesini.insert(0, '%s-01' % d.date.today().year)
         if not self.mesfin.get() and not saved: self.mesfin.insert(0, '%s-12' % d.date.today().year)
         self.mesini.focus()
 
     def grid(self):
         #Label(self.mainframe, text='', width=10, bg=BGCOLOR).grid(row=0, column=0)
-        Label(self.mainframe, text='DEMONSTRATIVO DESPESAS POR CATEGORIA', width=60, bg=BGCOLOR, font=('Arial Bold', 16)).grid(row=1, column=0)
+        Label(self.mainframe, text='DEMONSTRATIVO DESPESAS POR %s' % self.mode, width=60, bg=BGCOLOR, font=('Arial Bold', 16)).grid(row=1, column=0)
         self.frame.grid(row=2, column=0)
         Label(self.frame, text='\n', width=5, height=10, bg=BGFORM).grid(row=0, column=0, rowspan=5) # remover espaço para Enter.
         Label(self.frame, text='', bg=BGFORM, width=80).grid(row=0, column=1, columnspan=2)
@@ -2873,7 +2892,11 @@ class FechamentoForm:
 
     def data(self, filter='', bank='', order=''):
         c = self.conn.cursor()
-        cmd = 'SELECT SUBSTR(datadoc, 0, 8) AS mes FROM diario JOIN categorias on categorias.id = diario.categoriamov '
+        if self.mode == 'CATEGORIA':
+            instr = 'categorias ON categorias.id = diario.categoriamov'
+        elif self.mode == 'FORNECEDOR':
+            instr = 'parceiros ON parceiros.id = diario.parceiro'
+        cmd = 'SELECT SUBSTR(datadoc, 0, 8) AS mes FROM diario JOIN %s ' % instr
         if filter: cmd += filter
         cmd += ' GROUP BY mes ORDER BY mes'
         c.execute(cmd)
@@ -2881,9 +2904,15 @@ class FechamentoForm:
         months = []
         for i in dados:
             months.append(i[0])
-        cmd = 'SELECT categorias.categoria FROM diario JOIN categorias on categorias.id = diario.categoriamov '
+        if self.mode == 'CATEGORIA':
+            cmd = 'SELECT categorias.categoria FROM diario JOIN categorias ON categorias.id = diario.categoriamov '
+        elif self.mode == 'FORNECEDOR':
+            cmd = 'SELECT parceiros.nome FROM diario JOIN parceiros ON parceiros.id = diario.parceiro '
         if filter: cmd += filter
-        cmd += ' GROUP BY categorias.categoria ORDER BY categorias.categoria'
+        if self.mode == 'CATEGORIA':
+            cmd += ' GROUP BY categorias.categoria ORDER BY categorias.categoria'
+        elif self.mode == 'FORNECEDOR':
+            cmd += ' GROUP BY parceiros.nome ORDER BY parceiros.nome'
         c.execute(cmd)
         dados = c.fetchall()
         categs = {}
@@ -2891,12 +2920,18 @@ class FechamentoForm:
             categs[i[0]] = {}
             for m in months:
                 categs[i[0]][m] = 0.0
-        cmd = 'SELECT categorias.categoria, SUBSTR(datadoc, 0, 8) AS mes, SUM(valor) FROM diario '
+        if self.mode == 'CATEGORIA':
+            cmd = 'SELECT categorias.categoria, SUBSTR(datadoc, 0, 8) AS mes, SUM(valor) FROM diario '
+        elif self.mode == 'FORNECEDOR':
+            cmd = 'SELECT parceiros.nome, SUBSTR(datadoc, 0, 8) AS mes, SUM(valor) FROM diario '
         cmd += 'JOIN parceiros on parceiros.id = diario.parceiro '
         cmd += 'JOIN bancos on bancos.id = diario.banco '
         cmd += 'JOIN categorias on categorias.id = diario.categoriamov '
         if filter: cmd += filter
-        cmd += ' GROUP BY categorias.categoria, mes ORDER BY mes, categorias.categoria'
+        if self.mode == 'CATEGORIA':
+            cmd += ' GROUP BY categorias.categoria, mes ORDER BY mes, categorias.categoria'
+        elif self.mode == 'FORNECEDOR':
+            cmd += ' GROUP BY parceiros.nome, mes ORDER BY mes, parceiros.nome'
         c.execute(cmd)
         dados = c.fetchall()
         for i in dados:
@@ -2904,7 +2939,7 @@ class FechamentoForm:
         categs_list = list(categs.keys())
         if order:
             order = order.split(' ')
-            if order[0] == 'Categoria':
+            if order[0] in ['Categoria', 'Fornecedor']:
                 reverse = False
                 if order[1] == 'DESC': reverse = True
                 categs_list.sort(reverse=reverse)
@@ -2937,10 +2972,16 @@ class FechamentoForm:
         if tam <= 80: tam = 80
         for i in months:
             new_cols[i] = tam
-        self.table1['columns'] = ['Categoria'] + months
-        columns = {
-            'id': 50, 'Categoria': 170
-        }
+        if self.mode == 'CATEGORIA':
+            self.table1['columns'] = ['Categoria'] + months
+            columns = {
+                'id': 50, 'Categoria': 170
+            }
+        elif self.mode == 'FORNECEDOR':
+            self.table1['columns'] = ['Fornecedor'] + months
+            columns = {
+                'id': 50, 'Fornecedor': 170
+            }
         columns.update(new_cols)
         self.table1.heading('#0', text='Id', anchor='center')
         self.table1.column('#0', anchor='w', width=50)
@@ -2952,7 +2993,7 @@ class FechamentoForm:
                 text=row, 
                 anchor='center' 
             )
-            if row in ['Categoria']:
+            if row in ['Categoria', 'Fornecedor']:
                 anchor = 'w'
             else:
                 anchor = 'e'
@@ -2967,7 +3008,10 @@ class FechamentoForm:
         #cmd(self.categoriamov)
         filter = ''
         pre = 'WHERE'
-        filter += ' %s diario.tipomov = 1 AND categorias.classifica = 1' % pre
+        if self.mode == 'CATEGORIA':
+            filter += ' %s diario.tipomov = 1 AND categorias.classifica = 1' % pre
+        elif self.mode == 'FORNECEDOR':
+            filter += ' %s diario.tipomov = 1 AND parceiros.modo IN (0, 2)' % pre
         pre = 'AND'
         if self.mesini.get():
             _date = self.mesini.get() + '-01'
@@ -3009,10 +3053,22 @@ class FechamentoForm:
                     _values = self.table1.item(i, 'values')
                 dataini = date_out(self.mesini.get() + '-01')
                 datafin = date_out(str(lastdaymonth(self.mesfin.get() + '-01')))
+                return_to = {
+                    'app': FechamentoForm,
+                    'saved': {
+                        'mode': self.mode,
+                        'mesini': self.mesini.get(),
+                        'mesfin': self.mesfin.get(),
+                    },
+                }
                 self.instance.clear_mainframe()
-                main = MovimentosForm(self.instance, self.conn, tipo_form='pag')
-                main.categoriamov.delete(0, 'end') 
-                main.categoriamov.insert(0, _values[0]) 
+                main = MovimentosForm(self.instance, self.conn, tipo_form='pag', return_to=return_to)
+                if self.mode == 'CATEGORIA':
+                    main.categoriamov.delete(0, 'end') 
+                    main.categoriamov.insert(0, _values[0]) 
+                elif self.mode == 'FORNECEDOR':
+                    main.parceiro.delete(0, 'end') 
+                    main.parceiro.insert(0, _values[0]) 
                 main.dataini.delete(0, 'end') 
                 main.dataini.insert(0, dataini) 
                 main.datafin.delete(0, 'end') 
