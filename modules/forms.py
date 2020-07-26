@@ -462,7 +462,7 @@ class GoogleDriveConn:
                                         message="Atividade concluída!")
                 else:
                     messagebox.showerror(title="Enviar dados para sua conta",
-                                        message="Há um problema de configuração que está impedindo o recebimento dos dados.")
+                                        message="O serviço ainda não está habilitado ou há problemas de integração. Use o menu Configurações.")
             except:
                 messagebox.showerror(title="Enviar dados para sua conta",
                                     message="Erro de atualização! Verifique se você está conectado à internet.")
