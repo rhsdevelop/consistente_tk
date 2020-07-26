@@ -408,35 +408,34 @@ class GoogleDriveConn:
                             title="Importar registros do servidor",
                             message='Tem certeza que deseja importar os dados da última atualização do servidor? \
                                         Não será possível desfazer a operação!'):
-            if 1==1:
-                if os.path.exists('googledrive/consistente.dat'):
-                    c.execute('SELECT * FROM drive WHERE arquivo = "consistente.db"')
-                    fields = c.fetchone()
-                    if fields:
-                        gauth = GoogleAuth()
-                        gauth.LocalWebserverAuth()
-                        drive = GoogleDrive(gauth)
-                        namefile = fields[1]
-                        idfile = fields[2]
-                        file1 = drive.CreateFile({'id': idfile})  # Initialize GoogleDriveFile instance with file id
-                        file1.GetContentFile(namefile)            # Download file as 'catlove.png'
-                        lastupdate = file1['modifiedDate'][0:10]
-                        lastupdate = lastupdate.split('-')
-                        lastupdate = [int(row) for row in lastupdate]
-                        lasthour = file1['modifiedDate'][11:16]
-                        lasthour = lasthour.split(':')
-                        lasthour = [int(row) for row in lasthour]
-                        international = d.datetime(lastupdate[0], lastupdate[1], lastupdate[2], lasthour[0], lasthour[1])
-                        brasildate = international - d.timedelta(hours=3)
-                        lastupdate = brasildate.strftime('%d/%m/%Y')
-                        lasthour = brasildate.strftime('%H:%M')
-                        message = 'Banco de dados sincronizado com atualização realizada em ' + lastupdate + ' às ' + lasthour + '.'
-                        messagebox.showinfo(title="Receber dados de sua conta Google",
-                                            message=message)
+            try:
+                c.execute('SELECT * FROM drive WHERE arquivo = "consistente.db"')
+                fields = c.fetchone()
+                if os.path.exists('googledrive/consistente.dat') and fields:
+                    gauth = GoogleAuth()
+                    gauth.LocalWebserverAuth()
+                    drive = GoogleDrive(gauth)
+                    namefile = fields[1]
+                    idfile = fields[2]
+                    file1 = drive.CreateFile({'id': idfile})  # Initialize GoogleDriveFile instance with file id
+                    file1.GetContentFile(namefile)            # Download file as 'catlove.png'
+                    lastupdate = file1['modifiedDate'][0:10]
+                    lastupdate = lastupdate.split('-')
+                    lastupdate = [int(row) for row in lastupdate]
+                    lasthour = file1['modifiedDate'][11:16]
+                    lasthour = lasthour.split(':')
+                    lasthour = [int(row) for row in lasthour]
+                    international = d.datetime(lastupdate[0], lastupdate[1], lastupdate[2], lasthour[0], lasthour[1])
+                    brasildate = international - d.timedelta(hours=3)
+                    lastupdate = brasildate.strftime('%d/%m/%Y')
+                    lasthour = brasildate.strftime('%H:%M')
+                    message = 'Banco de dados sincronizado com atualização realizada em ' + lastupdate + ' às ' + lasthour + '.'
+                    messagebox.showinfo(title="Receber dados de sua conta Google",
+                                        message=message)
                 else:
-                    messagebox.showerror(title="Receber dados de sua conta Google",
-                                        message="Há um problema de configuração que está impedindo o recebimento dos dados.")
-            else:
+                    messagebox.showwarning(title="Receber dados de sua conta Google",
+                                        message='O serviço ainda não está habilitado ou há problemas de integração. Use o menu Configurações.')
+            except:
                 messagebox.showerror(title="Receber dados de sua conta Google",
                                          message="Erro de atualização! Verifique se você está conectado à internet.")
         else:
@@ -448,25 +447,25 @@ class GoogleDriveConn:
                                message='Tem certeza que deseja exportar os dados em seu aplicativo para o servidor? \
                                         Não será possível desfazer a operação!'):
             try:
-                gauth = GoogleAuth()
-                gauth.LocalWebserverAuth()
-                drive = GoogleDrive(gauth)
                 c.execute('SELECT * FROM drive WHERE arquivo = "consistente.db"')
                 fields = c.fetchone()
                 if fields and os.path.exists('googledrive/consistente.dat'):
+                    gauth = GoogleAuth()
+                    gauth.LocalWebserverAuth()
+                    drive = GoogleDrive(gauth)
                     namefile = fields[1]
                     idfile = fields[2]
                     file1 = drive.CreateFile({'id': idfile})  # Initialize GoogleDriveFile instance with file id
                     file1.SetContentFile(namefile)            # Download file as 'catlove.png'
                     file1.Upload()                            # Upload it
+                    messagebox.showinfo(title="Enviar dados para sua conta",
+                                        message="Atividade concluída!")
                 else:
                     messagebox.showerror(title="Enviar dados para sua conta",
                                         message="Há um problema de configuração que está impedindo o recebimento dos dados.")
             except:
                 messagebox.showerror(title="Enviar dados para sua conta",
                                     message="Erro de atualização! Verifique se você está conectado à internet.")
-            messagebox.showinfo(title="Enviar dados para sua conta",
-                                message="Atividade concluída!")
         else:
             pass
 
@@ -1482,7 +1481,7 @@ class ParceirosEditForm:
         c.execute(cmd)
         data = c.fetchone()
         self.id.insert(0, data[0])
-        self.datacadastro.insert(0, data[1])
+        self.datacadastro.insert(0, date_out(data[1]))
         self.nome.insert(0, data[2])
         self.nomecompleto.insert(0, data[3])
         self.tipo.insert(0, TIPOS_DOC[data[4]])
@@ -1527,13 +1526,13 @@ class ParceirosEditForm:
                 if not self.data:
                     c.execute('''INSERT INTO parceiros (datacadastro, nome, nomecompleto, tipo, doc, endereco, telefone, observacao, modo, usuario)
                     VALUES("%s", "%s", "%s", %s, "%s", "%s", "%s", "%s", %s, %s)''' % (
-                        self.datacadastro.get(), self.nome.get(), self.nomecompleto.get(), TIPOS_DOC.index(self.tipo.get()), self.doc.get(), self.endereco.get(), self.telefone.get(), self.observacao.get(), TIPOS_RELAC.index(self.modo.get()), self.usuario.get()
+                        date_in(self.datacadastro.get()), self.nome.get(), self.nomecompleto.get(), TIPOS_DOC.index(self.tipo.get()), self.doc.get(), self.endereco.get(), self.telefone.get(), self.observacao.get(), TIPOS_RELAC.index(self.modo.get()), self.usuario.get()
                     ))
                 else:
                     c.execute('''UPDATE parceiros
                     SET datacadastro = "%s", nome = "%s", nomecompleto = "%s", tipo = %s, doc = "%s", endereco = "%s", telefone = "%s", observacao = "%s", modo = %s, usuario = %s
                     WHERE id = %s''' % (
-                        self.datacadastro.get(), self.nome.get(), self.nomecompleto.get(), TIPOS_DOC.index(self.tipo.get()), self.doc.get(), self.endereco.get(), self.telefone.get(), self.observacao.get(), TIPOS_RELAC.index(self.modo.get()), self.usuario.get(), self.data
+                        date_in(self.datacadastro.get()), self.nome.get(), self.nomecompleto.get(), TIPOS_DOC.index(self.tipo.get()), self.doc.get(), self.endereco.get(), self.telefone.get(), self.observacao.get(), TIPOS_RELAC.index(self.modo.get()), self.usuario.get(), self.data
                     ))
                 self.conn.commit()
                 messagebox.showinfo('Informação', 'Dados atualizados com sucesso!')
@@ -2234,7 +2233,9 @@ class MovimentosEditForm:
         if self.tipo_form in ('pag', 'cred'):
             fatura = self.fatura.get()
             if self.tipo_form == 'pag':
-                fat_g = GenerateFatura(self.conn, self.data, query_id(self.conn, 'bancos', ['nomebanco'], [True], banco), self.fatura.get())
+                _id = self.data
+                if self.duplic: _id = None
+                fat_g = GenerateFatura(self.conn, _id, query_id(self.conn, 'bancos', ['nomebanco'], [True], banco), self.fatura.get())
                 if fat_g.pago_anterior: descricao = None
                 if fat_g.message: messagebox.showwarning(fat_g.message[0], fat_g.message[1])
         if self.parceiro.get() and self.banco.get() and descricao and self.valor.get() and self.categoriamov.get():
