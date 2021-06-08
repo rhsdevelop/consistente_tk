@@ -2494,7 +2494,7 @@ class CashflowForm:
                     sai = Numbers(-float(i[4])).get_str()
                     saidas += float(i[4])
                 amount += float(i[4])
-                saldo = Numbers(amount).get_str()
+                saldo = Numbers(round(amount, 2)).get_str()
                 _dados.append([
                     i[0],
                     i[1],
