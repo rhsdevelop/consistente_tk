@@ -541,7 +541,7 @@ class BankForm:
         # Preenche a tabela
         self.table1['columns'] = ['Nome Banco', 'Tipo', 'Número', 'Venc']
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=40)
+        self.table1.column('#0', anchor='w', stretch=False, width=40)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         columns = {
@@ -554,7 +554,7 @@ class BankForm:
                 anchor='center' 
             )
             anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
@@ -842,7 +842,7 @@ class CategoriasForm:
         # Preenche a tabela
         self.table1['columns'] = ['Categoria', 'Tipo', 'Consta']
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=60)
+        self.table1.column('#0', anchor='w', stretch=False, width=60)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         columns = {
@@ -855,7 +855,7 @@ class CategoriasForm:
                 anchor='center' 
             )
             anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
@@ -1074,7 +1074,7 @@ class UserForm:
         # Preenche a tabela
         self.table1['columns'] = ['Nome', 'Observação']
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=60)
+        self.table1.column('#0', anchor='w', stretch=False, width=60)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         for row in ['Nome', 'Observação']:
@@ -1084,7 +1084,7 @@ class UserForm:
                 anchor='center' 
             )
             anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=161)
+            self.table1.column(row, anchor=anchor, stretch=False, width=161)
         index = 1
         #dados = [[1, 'Renan', 'Administrador'], [2, 'Outro', ''], [1, 'Renan', 'Administrador'], [2, 'Outro', ''], [1, 'Renan', 'Administrador'], [2, 'Outro', '']]
         for row in dados:
@@ -1295,7 +1295,7 @@ class ParceirosForm:
         # Preenche a tabela
         self.table1['columns'] = ['Nome', 'Nome Completo', 'Tipo', 'CNPJ', 'endereco', 'telefone', 'observacao', 'modo', 'Incluído em']
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=60)
+        self.table1.column('#0', anchor='w', stretch=False, width=60)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         columns = {
@@ -1308,7 +1308,7 @@ class ParceirosForm:
                 anchor='center' 
             )
             anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
@@ -1779,7 +1779,7 @@ class MovimentosForm:
                 'id': 60, 'Data': 80, 'Banco': 138, 'Cartão': 138, 'Fatura': 100, 'Vencimento': 100, 'Valor': 75, 'Pagamento': 120, 'Usuario': 120
             }
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=60)
+        self.table1.column('#0', anchor='w', stretch=False, width=60)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         for row in self.table1['columns']:
@@ -1792,7 +1792,7 @@ class MovimentosForm:
                 anchor = 'e'
             else:
                 anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
@@ -2523,7 +2523,7 @@ class CashflowForm:
             'id': 50, 'Banco': 130, 'Parceiro': 130, 'Categoria': 135, 'Entra': 65, 'Sai': 65, 'Saldo': 70, 'Vence em': 80, 'Pago em': 80, 'datafirstupdate': 120, 'datalastupdate': 120, 'datadoc': 120, 'fatura': 120, 'descricao': 120, 'tipomov': 120, 'usuario': 120
         }
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=50)
+        self.table1.column('#0', anchor='w', stretch=False, width=50)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('positive', foreground='blue')
         self.table1.tag_configure('negative', foreground='red')
@@ -2537,7 +2537,7 @@ class CashflowForm:
                 anchor = 'e'
             else:
                 anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             if Numbers(row[6]).get_val() < 0.0:
@@ -2768,7 +2768,7 @@ class ReportForm:
             'id': 50, 'Data': 100, 'Valor dia': 100, 'Valor acumulado': 120, 'Disponível': 110
         }
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=50)
+        self.table1.column('#0', anchor='w', stretch=False, width=50)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         for row in self.table1['columns']:
@@ -2781,7 +2781,7 @@ class ReportForm:
                 anchor = 'e'
             else:
                 anchor = 'w'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
@@ -2988,7 +2988,7 @@ class FechamentoForm:
             }
         columns.update(new_cols)
         self.table1.heading('#0', text='Id', anchor='center')
-        self.table1.column('#0', anchor='w', width=50)
+        self.table1.column('#0', anchor='w', stretch=False, width=50)
         self.table1.delete(*self.table1.get_children())
         self.table1.tag_configure('total', background='green yellow')
         for row in self.table1['columns']:
@@ -3001,7 +3001,7 @@ class FechamentoForm:
                 anchor = 'w'
             else:
                 anchor = 'e'
-            self.table1.column(row, anchor=anchor, width=columns[row])
+            self.table1.column(row, anchor=anchor, stretch=False, width=columns[row])
         index = 1
         for row in dados:
             self.table1.insert('', 'end', text=str(row[0]), values=row[1:])
